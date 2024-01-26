@@ -146,8 +146,8 @@ public class BPlusTree {
         LockUtil.ensureSufficientLockHeld(lockContext, LockType.NL);
 
         // TODO(proj2): implement
-
-        return Optional.empty();
+        LeafNode leafnode = root.get(key);
+        return(leafnode.getKey(key));
     }
 
     /**
@@ -203,7 +203,7 @@ public class BPlusTree {
 
         // TODO(proj2): Return a BPlusTreeIterator.
 
-        return Collections.emptyIterator();
+        return new BPlusTreeIterator();
     }
 
     /**
@@ -235,8 +235,7 @@ public class BPlusTree {
         LockUtil.ensureSufficientLockHeld(lockContext, LockType.NL);
 
         // TODO(proj2): Return a BPlusTreeIterator.
-
-        return Collections.emptyIterator();
+        return new BPlusTreeIterator(key);
     }
 
     /**
@@ -257,8 +256,16 @@ public class BPlusTree {
         // Note: You should NOT update the root variable directly.
         // Use the provided updateRoot() helper method to change
         // the tree's root if the old root splits.
-
-        return;
+        Optional<Pair<DataBox, Long>> pair = root.put(key, rid);
+        if(!pair.isPresent())
+            return;
+        List<DataBox> newKeys = new ArrayList<>();
+        List<Long> newChildren = new ArrayList<>();
+        newKeys.add(pair.get().getFirst());
+        newChildren.add(root.getPage().getPageNum());
+        newChildren.add(pair.get().getSecond());
+        InnerNode newNode = new InnerNode(metadata, bufferManager, newKeys, newChildren, lockContext);
+        updateRoot(newNode);
     }
 
     /**
@@ -286,8 +293,17 @@ public class BPlusTree {
         // Note: You should NOT update the root variable directly.
         // Use the provided updateRoot() helper method to change
         // the tree's root if the old root splits.
-
-        return;
+        Optional<Pair<DataBox, Long>> pair = root.bulkLoad(data, fillFactor);
+        while(pair.isPresent()){
+            List<DataBox> newKeys = new ArrayList<>();
+            List<Long> newChildren = new ArrayList<>();
+            newKeys.add(pair.get().getFirst());
+            newChildren.add(root.getPage().getPageNum());
+            newChildren.add(pair.get().getSecond());
+            InnerNode node = new InnerNode(metadata, bufferManager, newKeys, newChildren, lockContext);
+            updateRoot(node);
+            pair = root.bulkLoad(data, fillFactor);
+        }
     }
 
     /**
@@ -307,7 +323,7 @@ public class BPlusTree {
         LockUtil.ensureSufficientLockHeld(lockContext, LockType.NL);
 
         // TODO(proj2): implement
-
+        root.remove(key);
         return;
     }
 
@@ -421,19 +437,41 @@ public class BPlusTree {
     // Iterator ////////////////////////////////////////////////////////////////
     private class BPlusTreeIterator implements Iterator<RecordId> {
         // TODO(proj2): Add whatever fields and constructors you want here.
-
+        int index;
+        LeafNode currentNode;
+        public BPlusTreeIterator(DataBox key){
+            currentNode = root.get(key);
+            index = -1;
+            for(int i = 0; i < currentNode.getKeys().size(); i++){
+                if(currentNode.getKeys().get(i).compareTo(key) >= 0)
+                    break;
+                index ++;
+            }
+        }
+        public BPlusTreeIterator(){
+            currentNode = root.getLeftmostLeaf();
+            index = -1;
+        }
         @Override
         public boolean hasNext() {
             // TODO(proj2): implement
-
-            return false;
+            return (index != currentNode.getKeys().size() - 1 || currentNode.getRightSibling().isPresent());
         }
 
         @Override
         public RecordId next() {
             // TODO(proj2): implement
-
-            throw new NoSuchElementException();
+            index ++;
+            if(index == currentNode.getKeys().size()){
+                Optional<LeafNode> node = currentNode.getRightSibling();
+                if(node.isPresent()){
+                    currentNode = node.get();
+                    index = 0;
+                }
+                else
+                    throw new NoSuchElementException();
+            }
+            return currentNode.getRids().get(index);
         }
     }
 }

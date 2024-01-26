@@ -109,6 +109,7 @@ abstract class BPlusNode {
      *   +--+--+--+--+  +--+--+--+--+  +--+--+--+--+  +--+--+--+--+
      *   leaf0          leaf3          leaf1          leaf2
      *
+     *
      * When an inner node splits, the first d entries are kept in the left node
      * and the last d entries are moved to the right node. The middle entry is
      * moved (not copied) up as the split key. For example, we would split the

@@ -58,7 +58,7 @@ public class StringDataBox extends DataBox {
     @Override
     public String toString() {
         // TODO(proj0): replace the following line with `return s;`
-        return "FIX ME";
+        return s;
     }
 
     @Override

@@ -35,7 +35,7 @@ public class CommandLineInterface {
 
     public static void main(String args[]) throws IOException {
         // !// Basic database for project 0 through 3
-        // !Database db = new Database("demo", 25);
+        Database db = new Database("demo", 25);
         // !
         // !// Use the following after completing project 4 (locking)
         // !// Database db = new Database("demo", 25, new LockManager());
